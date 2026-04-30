@@ -101,9 +101,24 @@ jobs:
       run: qgo --version
 
     - name: Build NVM for Windows
+      shell: pwsh
       run: |
         cd src
+
+        # amd64 -> nvm-64.exe (selected at install time by InstallX64)
+        $env:GOARCH = "amd64"
         qgo build --profile=release
+        Move-Item -Force "${{ github.workspace }}\bin\nvm.exe" "${{ github.workspace }}\bin\nvm-64.exe"
+
+        # arm64 -> nvm-arm64.exe (selected at install time by InstallARM64)
+        $env:GOARCH = "arm64"
+        qgo build --profile=release
+        Move-Item -Force "${{ github.workspace }}\bin\nvm.exe" "${{ github.workspace }}\bin\nvm-arm64.exe"
+
+        # 386 -> nvm.exe (fallback selected by InstallOtherArch)
+        $env:GOARCH = "386"
+        qgo build --profile=release
+
         echo ${{ github.workspace }}\bin
         dir ${{ github.workspace }}\bin
         cd ..\
@@ -124,9 +139,11 @@ jobs:
     - name: Apply icon to executable
       run: |
         $resourceHackerPath = "$env:USERPROFILE\resource_hacker\ResourceHacker.exe"
-        $exe = "${{ github.workspace }}\bin\nvm.exe"
         $iconFile = "${{ github.workspace }}\assets\nvm.ico"
-        & $resourceHackerPath -open $exe -save $exe -action add -res $iconFile -mask ICONGROUP,MAINICON
+        foreach ($name in @('nvm.exe', 'nvm-64.exe', 'nvm-arm64.exe')) {
+          $exe = "${{ github.workspace }}\bin\$name"
+          & $resourceHackerPath -open $exe -save $exe -action add -res $iconFile -mask ICONGROUP,MAINICON
+        }
 
     - name: Sign Executables
       uses: azure/trusted-signing-action@v0.5.0

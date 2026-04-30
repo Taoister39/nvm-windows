@@ -36,7 +36,7 @@ Compression=lzma
 SolidCompression=yes
 ChangesEnvironment=yes
 DisableProgramGroupPage=yes
-ArchitecturesInstallIn64BitMode=x64
+ArchitecturesInstallIn64BitMode=x64 arm64
 UninstallDisplayIcon={app}\{#MyIcon}
 
 ; Version information
@@ -54,7 +54,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "quicklaunchicon"; Description: "{cm:CreateQuickLaunchIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked; OnlyBelowVersion: 0,6.1
 
 [Files]
-Source: "{#ProjectRoot}\bin\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "{#ProjectRoot}\bin\install.cmd"
+Source: "{#ProjectRoot}\bin\*"; DestDir: "{app}"; BeforeInstall: PreInstall; Flags: ignoreversion recursesubdirs createallsubdirs; Excludes: "install.cmd,nvm.exe,nvm-64.exe,nvm-arm64.exe"
+Source: "{#ProjectRoot}\bin\nvm-arm64.exe"; DestDir: "{app}"; DestName: "nvm.exe"; Check: InstallARM64; Flags: solidbreak
+Source: "{#ProjectRoot}\bin\nvm-64.exe"; DestDir: "{app}"; DestName: "nvm.exe"; Check: InstallX64; Flags: solidbreak
+Source: "{#ProjectRoot}\bin\nvm.exe"; DestDir: "{app}"; DestName: "nvm.exe"; Check: InstallOtherArch
 
 [Icons]
 Name: "{group}\{#MyAppShortName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{#MyIcon}"
@@ -75,6 +78,21 @@ var
   EmailEdit: TEdit;
   EmailLabel: TLabel;
   PreText: TLabel;
+
+function InstallX64: Boolean;
+begin
+  Result := Is64BitInstallMode and (ProcessorArchitecture = paX64);
+end;
+
+function InstallARM64: Boolean;
+begin
+  Result := Is64BitInstallMode and (ProcessorArchitecture = paARM64);
+end;
+
+function InstallOtherArch: Boolean;
+begin
+  Result := not InstallX64 and not InstallARM64;
+end;
 
 function GetCurrentYear(Param: String): String;
 begin
